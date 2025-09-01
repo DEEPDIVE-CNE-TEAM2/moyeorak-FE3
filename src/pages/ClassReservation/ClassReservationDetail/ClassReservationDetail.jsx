@@ -17,6 +17,7 @@ const ClassReservationDetail = () => {
     setLoading(true);
     getProgramDetail(id)
       .then((res) => {
+        console.log("[getProgramDetail 응답]", res);
         setData(res);
         setError(null);
       })

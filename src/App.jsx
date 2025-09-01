@@ -21,6 +21,8 @@ import Jung from './pages/Area/Jung';
 import Seongdong from './pages/Area/Seongdong';
 import ForgotPassword from "./pages/ForgotPassword";
 import VerifyPhone from "./pages/VerifyPhone";
+import Notice from "./pages/Notice/Notice/Notice";
+import NoticeDetail from "./pages/Notice/NoticeDetail/NoticeDetail";
 
 
 const App = () => {
@@ -48,7 +50,8 @@ const App = () => {
         <Route path='/seongdong' element={<Seongdong />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/verify-phone" element={<VerifyPhone />} />
-
+        <Route path="/notice" element={<Notice />} />
+        <Route path="/notice/:id" element={<NoticeDetail />} />
 
 
       </Routes>

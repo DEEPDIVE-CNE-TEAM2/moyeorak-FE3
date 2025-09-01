@@ -340,3 +340,14 @@ export const fetchRegionMainImages = async (regionId) => {
   }
 };
 
+// 공지사항 조회
+export const fetchNotices = async (regionId) => {
+  const response = await apiClient.get(`/api/notices/region/${regionId}`);
+  return response.data;
+};
+
+// 공지사항 상세조회
+export const fetchNoticeDetail = async (id) => {
+  const response = await apiClient.get(`/api/notices/${id}`);
+  return response.data;
+};

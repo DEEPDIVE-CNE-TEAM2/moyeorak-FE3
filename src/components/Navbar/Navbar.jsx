@@ -131,6 +131,19 @@ const Navbar = ({ onDistrictChange, onLogoClick }) => {
               </a>
             </li>
 
+            <li>
+              <a
+                href="/notice"
+                onClick={(e) => {
+                  e.preventDefault();
+                  navigate("/notice");
+                }}
+                className={`${styles.menuLink} ${location.pathname === '/notice' ? styles.activeMenu : ''}`}
+              >
+                공지사항
+              </a>
+            </li>
+
             <li
               className={styles.mypageWrapper}
               onMouseEnter={() => setShowSubmenu(true)}
