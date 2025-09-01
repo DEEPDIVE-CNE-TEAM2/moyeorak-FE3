@@ -38,7 +38,9 @@ const PromotionAddPopup = ({ onClose, onSave }) => {
 
     setIsLoading(true);
     try {
+      // Presigned URL + S3 업로드 + 생성 API 호출
       const result = await uploadPromotionImage(file);
+
       setMessage('홍보물이 등록되었습니다.');
 
       if (onSave) onSave(result.imageUrl);
@@ -82,7 +84,7 @@ const PromotionAddPopup = ({ onClose, onSave }) => {
         {message && (
           <div
             className={`${styles.message} ${
-              message.includes('성공') ? styles.success : styles.error
+              message.includes('등록') ? styles.success : styles.error
             }`}
           >
             {message}

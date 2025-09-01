@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import styles from "./UserManagement.module.css";
 import AdminNavbar from "../../components/Navbar/Navbar";
 import UserDetailModal from "./UserDetailModal/UserDetailModal";
@@ -14,43 +14,37 @@ const formatDate = (dateString) => {
 
 export default function UserManagement() {
   const navigate = useNavigate();
-  const location = useLocation();
-
   const [members, setMembers] = useState([]);
-  const [regionFilter, setRegionFilter] = useState("");
   const [searchText, setSearchText] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [filteredMembers, setFilteredMembers] = useState([]);
   const [selectedMember, setSelectedMember] = useState(null);
 
-  // 회원 목록 불러오기
-  const loadMembers = async () => {
-    try {
-      const data = await fetchAdminUsers();
-      const transformed = data.map((user) => ({
-        id: user.id,
-        name: user.name,
-        gender: user.gender,
-        email: user.email,
-        address: user.region || "-",
-        joinDate: formatDate(user.createdAt),
-        regionId: user.regionId || 0,
-      }));
-      setMembers(transformed);
-    } catch (e) {
-      alert("회원 정보를 불러오는 데 실패했습니다.");
-    }
-  };
-
-  // 마운트 시, 또는 reload state 변경 시 목록 불러오기
   useEffect(() => {
-    loadMembers();
-  }, [location.state?.reload]);
+    const loadMembers = async () => {
+      try {
+        const data = await fetchAdminUsers();
 
-  // 필터링 로직
+        const transformed = data.map((user) => ({
+          id: user.id,
+          name: user.name,
+          gender: user.gender,
+          email: user.email,
+          address: user.region || "-",
+          joinDate: formatDate(user.createdAt),
+          regionId: user.regionId || 0,
+        }));
+        setMembers(transformed);
+      } catch (e) {
+        alert("회원 정보를 불러오는 데 실패했습니다.");
+      }
+    };
+
+    loadMembers();
+  }, []);
+
   useEffect(() => {
     let filtered = members;
-    if (regionFilter) filtered = filtered.filter((m) => m.address === regionFilter);
     if (searchText.trim()) {
       filtered = filtered.filter(
         (m) =>
@@ -63,7 +57,7 @@ export default function UserManagement() {
     }
     setFilteredMembers(filtered);
     setCurrentPage(1);
-  }, [regionFilter, searchText, members]);
+  }, [searchText, members]);
 
   const totalPages = Math.ceil(filteredMembers.length / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -96,17 +90,6 @@ export default function UserManagement() {
 
       <div className={styles.container}>
         <div className={styles.filterRow}>
-          <select
-            className={styles.select}
-            value={regionFilter}
-            onChange={(e) => setRegionFilter(e.target.value)}
-          >
-            <option value="">지역 선택</option>
-            <option value="중구">중구</option>
-            <option value="성동구">성동구</option>
-            <option value="송파구">송파구</option>
-          </select>
-
           <input
             type="text"
             placeholder="검색"
@@ -142,7 +125,6 @@ export default function UserManagement() {
                   <td
                     className={styles.nameText}
                     onClick={() => handleMemberClick(m)}
-                    style={{ cursor: "pointer" }}
                   >
                     {m.name}
                   </td>

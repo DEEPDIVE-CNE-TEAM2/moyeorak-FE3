@@ -1,4 +1,3 @@
-// ProgramManagement.jsx
 import React, { useState, useEffect } from "react";
 import styles from "./ProgramManagement.module.css";
 import AdminNavbar from "../../../components/Navbar/Navbar";
@@ -27,16 +26,16 @@ export default function ProgramManagement() {
   const [regionFilter, setRegionFilter] = useState("");
   const [searchText, setSearchText] = useState("");
 
+  const [filteredPrograms, setFilteredPrograms] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const programsPerPage = 10;
 
-  // API 호출
   const loadPrograms = async () => {
     setLoading(true);
     setError(null);
     try {
       const regionId = regionMap[regionFilter] || "";
-      const data = await fetchPrograms({ regionId, title: searchText });
+      const data = await fetchPrograms({ regionId });
 
       const mapped = data.map((p) => ({
         id: p.id,
@@ -60,14 +59,28 @@ export default function ProgramManagement() {
 
   useEffect(() => {
     loadPrograms();
-  }, [regionFilter, searchText]);
+  }, [regionFilter]);
+
+  // 로컬 필터링
+  useEffect(() => {
+    let filtered = programs;
+
+    if (searchText.trim()) {
+      filtered = filtered.filter((p) =>
+        p.name.toLowerCase().includes(searchText.toLowerCase())
+      );
+    }
+
+    setFilteredPrograms(filtered);
+    setCurrentPage(1);
+  }, [searchText, programs]);
 
   const indexOfLast = currentPage * programsPerPage;
   const indexOfFirst = indexOfLast - programsPerPage;
-  const currentPrograms = programs.slice(indexOfFirst, indexOfLast);
+  const currentPrograms = filteredPrograms.slice(indexOfFirst, indexOfLast);
 
   const pageNumbers = [];
-  for (let i = 1; i <= Math.ceil(programs.length / programsPerPage); i++) {
+  for (let i = 1; i <= Math.ceil(filteredPrograms.length / programsPerPage); i++) {
     pageNumbers.push(i);
   }
 
