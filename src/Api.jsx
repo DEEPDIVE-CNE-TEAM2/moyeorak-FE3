@@ -1,83 +1,54 @@
-import axios from "axios";
+import axios from 'axios';
 
 const BASE_URL = import.meta.env.VITE_API_URL;
 
-// =============================
-// 로컬 스토리지 키
-// =============================
-const ACCESS_TOKEN_KEY = "accessToken";
-const REFRESH_TOKEN_KEY = "refreshToken";
-
-// =============================
-// 토큰 관리 함수
-// =============================
-
-// Access Token 저장
+// 'Bearer ' 접두사 제거 후 저장
 export const setAccessToken = (token) => {
-  if (token?.startsWith("Bearer ")) {
-    token = token.replace("Bearer ", "");
-  }
-  localStorage.setItem(ACCESS_TOKEN_KEY, token);
+  const cleanedToken = token.startsWith('Bearer ') ? token.slice(7) : token;
+  sessionStorage.setItem("accessToken", cleanedToken);
 };
 
-// Refresh Token 저장
-export const setRefreshToken = (token) => {
-  if (token?.startsWith("Bearer ")) {
-    token = token.replace("Bearer ", "");
-  }
-  localStorage.setItem(REFRESH_TOKEN_KEY, token);
-};
-
-// Access Token 가져오기 (Bearer 붙여서 반환)
+// 저장된 토큰에 'Bearer ' 붙여서 반환
 export const getAccessToken = () => {
-  const token = localStorage.getItem(ACCESS_TOKEN_KEY);
+  const token = sessionStorage.getItem("accessToken");
   return token ? `Bearer ${token}` : null;
 };
 
-// Refresh Token 가져오기
-export const getRefreshToken = () => {
-  return localStorage.getItem(REFRESH_TOKEN_KEY);
+// 'Bearer ' 접두사 제거 후 저장
+export const setRefreshToken = (token) => {
+  const cleanedToken = token.startsWith('Bearer ') ? token.slice(7) : token;
+  sessionStorage.setItem("refreshToken", cleanedToken);
 };
 
-// 토큰 제거
-export const clearTokens = () => {
-  localStorage.removeItem(ACCESS_TOKEN_KEY);
-  localStorage.removeItem(REFRESH_TOKEN_KEY);
-};
+// 저장된 리프레시 토큰 반환
+export const getRefreshToken = () => sessionStorage.getItem("refreshToken");
 
-// =============================
-// Axios 인스턴스
-// =============================
+// axios 인스턴스 생성
 const apiClient = axios.create({
   baseURL: BASE_URL,
 });
 
-// 리프레시 요청 전용 클라이언트 (인터셉터 없음)
+// 리프레시 요청은 별도 인스턴스(인터셉터 없음)로 처리 (무한 루프 방지용)
 const refreshClient = axios.create({
   baseURL: BASE_URL,
 });
 
-// 요청 인터셉터 → Authorization 자동 추가
-apiClient.interceptors.request.use(
-  (config) => {
-    const token = getAccessToken();
-    console.log("API 요청 헤더 Authorization:", token);
-    if (token) {
-      config.headers["Authorization"] = token;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
+// 요청 인터셉터: 모든 요청에 accessToken 자동 삽입
+apiClient.interceptors.request.use(config => {
+  const token = getAccessToken();
+  console.log("API 요청 헤더 Authorization:", token);
+  if (token) {
+    config.headers.Authorization = token;
+  }
+  return config;
+}, error => Promise.reject(error));
 
-// =============================
-// 토큰 재발급 로직
-// =============================
+// 토큰 재발급 처리
 let isRefreshing = false;
 let failedQueue = [];
 
 const processQueue = (error, token = null) => {
-  failedQueue.forEach((prom) => {
+  failedQueue.forEach(prom => {
     if (error) {
       prom.reject(error);
     } else {
@@ -87,10 +58,10 @@ const processQueue = (error, token = null) => {
   failedQueue = [];
 };
 
-// 응답 인터셉터 → 401 발생 시 토큰 재발급
+// 응답 인터셉터: 401 발생 시 토큰 재발급 시도
 apiClient.interceptors.response.use(
-  (response) => response,
-  async (error) => {
+  response => response,
+  async error => {
     console.log("응답 인터셉터 진입:", error.response?.status, error.config?.url);
 
     const originalRequest = error.config;
@@ -103,15 +74,15 @@ apiClient.interceptors.response.use(
       originalRequest._retry = true;
 
       if (isRefreshing) {
-        // 재발급 진행 중이면 큐에 대기
+        // 재발급 진행 중이면 요청 대기 큐에 추가
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
         })
-          .then((token) => {
-            originalRequest.headers["Authorization"] = token;
+          .then(token => {
+            originalRequest.headers.Authorization = token;
             return apiClient(originalRequest);
           })
-          .catch((err) => Promise.reject(err));
+          .catch(err => Promise.reject(err));
       }
 
       isRefreshing = true;
@@ -120,11 +91,11 @@ apiClient.interceptors.response.use(
         const refreshToken = getRefreshToken();
         if (!refreshToken) throw new Error("Refresh token is missing.");
 
-        // 리프레시 토큰으로 새 토큰 요청
+        // 리프레시 토큰으로 새 토큰 요청 (별도 axios 인스턴스 사용)
         const response = await refreshClient.post(
           `/api/users/refresh`,
           { refreshToken },
-          { headers: { "Content-Type": "application/json" } }
+          { headers: { 'Content-Type': 'application/json' } }
         );
 
         const newAccessToken = response.data.accessToken;
@@ -142,13 +113,14 @@ apiClient.interceptors.response.use(
 
         processQueue(null, bearerToken);
 
-        originalRequest.headers["Authorization"] = bearerToken;
+        originalRequest.headers.Authorization = bearerToken;
         return apiClient(originalRequest);
       } catch (refreshError) {
         console.error("토큰 재발급 실패:", refreshError);
         processQueue(refreshError, null);
 
-        clearTokens();
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
         window.location.href = "/admin/login";
 
         return Promise.reject(refreshError);
@@ -160,10 +132,6 @@ apiClient.interceptors.response.use(
     return Promise.reject(error);
   }
 );
-
-export default apiClient;
-
-
 
 // 관리자 로그인
 export const adminLogin = async (email, password) => {
@@ -335,6 +303,79 @@ export const deleteNotice = async (noticeId) => {
   throw new Error("삭제 실패");
 };
 
+// 홍보물 리스트 조회
+export const getPromotionImages = async () => {
+  const res = await apiClient.get('/api/admin/main-img');
+  return res.data;
+};
+
+// Presigned URL 요청 함수
+export const getPresignedUrl = async (fileName, fileType) => {
+  console.log('[getPresignedUrl] 호출:', fileName, fileType);
+
+  try {
+    // encodeURIComponent로 인코딩
+    const url = `/api/admin/main-img/presigned-url?filename=${encodeURIComponent(fileName)}&filetype=${encodeURIComponent(fileType)}`;
+
+    const response = await apiClient.get(url);
+
+    console.log('[getPresignedUrl] 응답:', response.data);
+
+    const uploadUrl = response.data;
+    const imageUrl = uploadUrl;
+    return { uploadUrl, imageUrl };
+  } catch (err) {
+    console.error('[getPresignedUrl] 에러:', err);
+    throw err;
+  }
+};
+
+
+// 홍보물 생성 (Presigned URL → S3 업로드 → 백엔드 등록)
+export const uploadPromotionImage = async (file) => {
+  console.log("[uploadPromotionImage] 파일명:", file.name, "타입:", file.type);
+
+  // 1. presigned URL 받기
+  const { uploadUrl, imageUrl } = await getPresignedUrl(file.name, file.type);
+  console.log("[uploadPromotionImage] presigned URL 받음:", uploadUrl);
+
+  // 2. S3에 업로드
+  try {
+    await axios.put(uploadUrl, file, {
+      headers: {
+        'Content-Type': file.type,
+      },
+    });
+    console.log("[uploadPromotionImage] S3 업로드 성공");
+  } catch (err) {
+    console.error("[uploadPromotionImage] S3 업로드 실패", err);
+    throw err;
+  }
+
+  // 3. 백엔드 DB에 imageUrl 등록
+  try {
+    const response = await apiClient.post('/api/admin/main-img', { imageUrl });
+    console.log("[uploadPromotionImage] 백엔드 이미지 URL 등록 완료", response.data);
+    return response.data; // { id, imageUrl, displayOrder, active } 반환
+  } catch (err) {
+    console.error("[uploadPromotionImage] 백엔드 이미지 URL 등록 실패", err);
+    throw err;
+  }
+};
+
+
+// 홍보물 수정
+export const patchMainImage = async (payload) => {
+  const response = await apiClient.patch('/api/admin/main-img', payload);
+  return response.data;
+};
+
+//홍보물 삭제
+export const deleteMainImage = async (id) => {
+  const response = await apiClient.delete(`/api/admin/main-img/${id}`);
+  return response.data;
+};
+
 // 시설 목록 조회
 export const fetchFacilities = async () => {
   try {
@@ -373,91 +414,46 @@ export const createFacility = async (facilityData) => {
 
 
 
-
-// 홍보물 리스트 조회
-export const getPromotionImages = async () => {
-  const res = await apiClient.get('/api/admin/main-images');
-  return res.data;
-};
-/*
-export const getPromotionImages = async () => {
-  const token = getAccessToken(); // "Bearer xxx" 형태로 반환됨
-  console.log('전송 토큰 :', token);
-
-  const res = await fetch('https://api.moyeorak.cloud/api/admin/main-images', {
-    method: 'GET',
-    headers: {
-      'Authorization': token, // 그대로 사용, "Bearer "를 다시 붙이지 않음
-      'Content-Type': 'application/json'
-    }
-  });
-
-  if (!res.ok) {
-    throw new Error(`HTTP error! status: ${res.status}`);
+// CloudWatch 메트릭 조회
+export const getCloudWatchMetrics = async (payload) => {
+  try {
+    const response = await apiClient.post("/api/cloudwatch/metrics", payload);
+    return response.data;
+  } catch (error) {
+    console.error("CloudWatch 메트릭 조회 실패:", error);
+    throw error;
   }
+};
 
-  return await res.json();
+// CloudWatch 로그 조회
+/*
+export const queryCloudWatchLogs = async (payload) => {
+  try {
+    const response = await apiClient.post("/api/cloudwatch/logs/query", payload);
+    return response.data;
+  } catch (error) {
+    console.error("CloudWatch 로그 조회 실패:", error);
+    throw error;
+  }
 };
 */
+export const queryCloudWatchLogs = async (payload) => {
+  try {
+    const safePayload = {
+      logGroupNames: Array.isArray(payload.logGroupNames)
+        ? payload.logGroupNames
+        : [payload.logGroupNames],
+      queryString: payload.queryString.trim(),
+      startTime: new Date(payload.startTime).toISOString(),
+      endTime: new Date(payload.endTime).toISOString(),
+    };
 
+    console.log("📌 최종 safePayload:", safePayload);
 
-
-
-// 홍보물 수정
-export const patchMainImage = async (payload) => {
-  const res = await apiClient.put('/api/admin/main-images', payload);
-  return res.data;
-};
-
-// 홍보물 삭제
-export const deleteMainImage = async (id) => {
-  const res = await apiClient.delete(`/api/admin/main-images/${id}`);
-  return res.data;
-};
-
-// 홍보물 생성
-export const uploadPromotionImage = async (file) => {
-  if (!file) throw new Error("파일이 없습니다.");
-
-  // 1. Presigned URL 요청
-  const presignRes = await apiClient.post('/api/admin/main-images/presign', {
-    filename: file.name,
-    filetype: file.type
-  });
-  const presignedUrl = presignRes.data;
-
-  // 2. S3에 PUT 업로드
-  await fetch(presignedUrl, {
-    method: 'PUT',
-    headers: { 'Content-Type': file.type },
-    body: file
-  });
-
-  // 3. 업로드된 URL을 main-images 생성 API에 전달
-  // presignedUrl에서 ? 이후 쿼리 제거
-  const imageUrl = presignedUrl.split('?')[0];
-
-  const createRes = await apiClient.post('/api/admin/main-images', {
-    imageUrl
-  });
-
-  return createRes.data;
-};
-
-
-
-
-
-
-
-// 메트릭 조회
-export const getCloudWatchMetrics = async (params) => {
-  const response = await apiClient.post("/api/cloudwatch/metrics/query", params);
-  return response.data;
-};
-
-// 로그 조회
-export const queryCloudWatchLogs = async (params) => {
-  const response = await apiClient.post("/api/cloudwatch/logs/query", params);
-  return response.data;
+    const response = await apiClient.post("/api/cloudwatch/logs/query", safePayload);
+    return response.data;
+  } catch (error) {
+    console.error("CloudWatch 로그 조회 실패:", error);
+    throw error;
+  }
 };

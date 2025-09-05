@@ -11,7 +11,6 @@ const PromotionMaterial = () => {
   const [isPopupOpen, setIsPopupOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
 
-  // ✅ 조회 API
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -31,7 +30,6 @@ const PromotionMaterial = () => {
     fetchData();
   }, []);
 
-  // ✅ 표시 여부 변경 (프론트 상태만 변경)
   const handleVisibilityChange = (id) => {
     setData(prevData =>
       prevData.map(item =>
@@ -40,21 +38,17 @@ const PromotionMaterial = () => {
     );
   };
 
-  // ✅ 추가 버튼 → 팝업 열기
   const openAddPopup = () => {
     setEditingItem(null);
     setIsPopupOpen(true);
   };
 
-  // ✅ 수정 버튼 → 수정 페이지 이동
   const openEditPage = () => {
     navigate('/admin/post/promotion/edit');
   };
 
-  // ✅ 팝업 저장 후 처리 (여기서는 단순히 닫기만)
   const handleSave = () => {
     setIsPopupOpen(false);
-    // 저장 후 다시 조회 필요하면 여기서 fetchData() 호출 가능
   };
 
   return (

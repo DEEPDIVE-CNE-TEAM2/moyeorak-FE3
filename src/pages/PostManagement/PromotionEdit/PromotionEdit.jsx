@@ -50,7 +50,7 @@ const PromotionEdit = () => {
           .map(item => ({
             id: item.id,
             displayOrder: item.displayOrder,
-            visible: item.active,
+            visible: item.isActive ?? item.active ?? false,
             image: item.imageUrl || '',
           }))
           .sort((a, b) => a.displayOrder - b.displayOrder);
@@ -89,21 +89,21 @@ const PromotionEdit = () => {
   };
 
   const handleSave = async () => {
-    try {
-      const payload = data.map(item => ({
-        id: item.id,
-        displayOrder: item.displayOrder,
-        isActive: item.visible !== undefined ? item.visible : false,
-      }));
+  try {
+    const payload = data.map(item => ({
+      id: item.id,
+      displayOrder: item.displayOrder,
+      isActive: item.visible !== undefined ? item.visible : false,
+    }));
 
-      await patchMainImage(payload);
-      alert('저장 완료되었습니다.');
-      navigate('/admin/post/promotion');
-    } catch (error) {
-      console.error(error);
-      alert('저장 중 오류가 발생했습니다.');
-    }
-  };
+    await patchMainImage(payload);
+    alert('저장 완료되었습니다.');
+    navigate('/admin/post/promotion');
+  } catch (error) {
+    console.error(error);
+    alert('저장 중 오류가 발생했습니다.');
+  }
+};
 
   const handleCancel = () => {
     navigate('/admin/post/promotion');
