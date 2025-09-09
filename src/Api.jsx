@@ -305,30 +305,71 @@ export const deleteNotice = async (noticeId) => {
 
 // 홍보물 리스트 조회
 export const getPromotionImages = async () => {
-  const res = await apiClient.get('/api/admin/main-img');
+  const res = await apiClient.get("/api/admin/main-img");
   return res.data;
 };
 
 // Presigned URL 요청 함수
-export const getPresignedUrl = async (fileName, fileType) => {
-  console.log('[getPresignedUrl] 호출:', fileName, fileType);
+/*
+export const getPresignedUrl = async (fileName, file) => {
+  const fileType = file.type; // ✅ MIME 타입 전체 (예: image/jpeg)
+  console.log("[getPresignedUrl] 호출:", fileName, fileType);
 
   try {
-    // encodeURIComponent로 인코딩
-    const url = `/api/admin/main-img/presigned-url?filename=${encodeURIComponent(fileName)}&filetype=${encodeURIComponent(fileType)}`;
+    const response = await apiClient.get("/api/admin/main-img/presigned-url", {
+      params: {
+        filename: fileName,   // ❌ encodeURIComponent 제거
+        filetype: fileType,   // ❌ encodeURIComponent 제거
+      },
+      paramsSerializer: (params) => {
+        return `filename=${encodeURIComponent(params.filename)}&filetype=${params.filetype}`;
+      },
 
-    const response = await apiClient.get(url);
 
-    console.log('[getPresignedUrl] 응답:', response.data);
+    });
 
-    const uploadUrl = response.data;
-    const imageUrl = uploadUrl;
+    console.log("[getPresignedUrl] 응답:", response.data);
+
+    const uploadUrl = response.data; // presigned URL
+    const imageUrl = uploadUrl.split("?")[0]; // ✅ 실제 접근 가능한 S3 URL
     return { uploadUrl, imageUrl };
   } catch (err) {
-    console.error('[getPresignedUrl] 에러:', err);
+    console.error("[getPresignedUrl] 에러:", err);
     throw err;
   }
 };
+*/
+// Presigned URL 요청 함수 (POST + JSON 바디)
+export const getPresignedUrl = async (fileName, file) => {
+  const contentType = file.type; // "image/jpeg"
+  console.log("[getPresignedUrl] 호출:", fileName, contentType);
+
+  try {
+    const response = await apiClient.post(
+      "/api/admin/main-img/presigned-url",
+      {
+        filename: fileName,
+        contentType: contentType, // ✅ 백엔드가 기대하는 키 이름
+      },
+      {
+        headers: {
+          "Content-Type": "application/json", // ✅ JSON 전송
+        },
+      }
+    );
+
+    console.log("[getPresignedUrl] 응답:", response.data);
+
+    const uploadUrl = response.data; // presigned URL
+    const imageUrl = uploadUrl.split("?")[0]; // ✅ 실제 접근 가능한 S3 URL
+    return { uploadUrl, imageUrl };
+  } catch (err) {
+    console.error("[getPresignedUrl] 에러:", err.response?.data || err);
+    throw err;
+  }
+};
+
+
 
 
 // 홍보물 생성 (Presigned URL → S3 업로드 → 백엔드 등록)
@@ -336,32 +377,37 @@ export const uploadPromotionImage = async (file) => {
   console.log("[uploadPromotionImage] 파일명:", file.name, "타입:", file.type);
 
   // 1. presigned URL 받기
-  const { uploadUrl, imageUrl } = await getPresignedUrl(file.name, file.type);
+  const { uploadUrl, imageUrl } = await getPresignedUrl(file.name, file);
   console.log("[uploadPromotionImage] presigned URL 받음:", uploadUrl);
 
-  // 2. S3에 업로드
+  // 2. S3 업로드
   try {
+    /*
     await axios.put(uploadUrl, file, {
       headers: {
-        'Content-Type': file.type,
+        "Content-Type": file.type, // ✅ 파일 MIME 타입
       },
     });
+    */
+    await axios.put(uploadUrl, file);
     console.log("[uploadPromotionImage] S3 업로드 성공");
   } catch (err) {
-    console.error("[uploadPromotionImage] S3 업로드 실패", err);
+    console.error("[uploadPromotionImage] S3 업로드 실패", err.response?.data || err);
     throw err;
   }
 
   // 3. 백엔드 DB에 imageUrl 등록
   try {
-    const response = await apiClient.post('/api/admin/main-img', { imageUrl });
+    const response = await apiClient.post("/api/admin/main-img", { imageUrl });
     console.log("[uploadPromotionImage] 백엔드 이미지 URL 등록 완료", response.data);
-    return response.data; // { id, imageUrl, displayOrder, active } 반환
+    return response.data; // { id, imageUrl, displayOrder, active }
   } catch (err) {
-    console.error("[uploadPromotionImage] 백엔드 이미지 URL 등록 실패", err);
+    console.error("[uploadPromotionImage] 백엔드 이미지 URL 등록 실패", err.response?.data || err);
     throw err;
   }
 };
+
+
 
 
 // 홍보물 수정
@@ -421,39 +467,6 @@ export const getCloudWatchMetrics = async (payload) => {
     return response.data;
   } catch (error) {
     console.error("CloudWatch 메트릭 조회 실패:", error);
-    throw error;
-  }
-};
-
-// CloudWatch 로그 조회
-/*
-export const queryCloudWatchLogs = async (payload) => {
-  try {
-    const response = await apiClient.post("/api/cloudwatch/logs/query", payload);
-    return response.data;
-  } catch (error) {
-    console.error("CloudWatch 로그 조회 실패:", error);
-    throw error;
-  }
-};
-*/
-export const queryCloudWatchLogs = async (payload) => {
-  try {
-    const safePayload = {
-      logGroupNames: Array.isArray(payload.logGroupNames)
-        ? payload.logGroupNames
-        : [payload.logGroupNames],
-      queryString: payload.queryString.trim(),
-      startTime: new Date(payload.startTime).toISOString(),
-      endTime: new Date(payload.endTime).toISOString(),
-    };
-
-    console.log("📌 최종 safePayload:", safePayload);
-
-    const response = await apiClient.post("/api/cloudwatch/logs/query", safePayload);
-    return response.data;
-  } catch (error) {
-    console.error("CloudWatch 로그 조회 실패:", error);
     throw error;
   }
 };

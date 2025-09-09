@@ -1,25 +1,28 @@
-import React, { useState } from 'react';
-import { IoMdClose } from 'react-icons/io';
-import styles from './PromotionAddPopup.module.css';
-import { uploadPromotionImage } from '../../../Api'; // 경로 맞게 수정하세요
+import React, { useState } from "react";
+import { IoMdClose } from "react-icons/io";
+import styles from "./PromotionAddPopup.module.css";
+import { uploadPromotionImage } from "../../../Api";
 
 const PromotionAddPopup = ({ onClose, onSave }) => {
   const [file, setFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   // 이미지 선택 시 미리보기 설정
   const handleImageChange = (e) => {
     const selectedFile = e.target.files[0];
     if (selectedFile) {
+
+      console.log("[handleImageChange] 선택된 파일:", selectedFile);
+      console.log("[handleImageChange] MIME 타입:", selectedFile.type); // ✅ 여기 추가
       setFile(selectedFile);
 
       const reader = new FileReader();
       reader.onloadend = () => setImagePreview(reader.result);
       reader.readAsDataURL(selectedFile);
 
-      setMessage('');
+      setMessage("");
     }
   };
 
@@ -32,7 +35,7 @@ const PromotionAddPopup = ({ onClose, onSave }) => {
   // 저장 버튼 클릭 시
   const handleSave = async () => {
     if (!file) {
-      setMessage('이미지를 등록해주세요.');
+      setMessage("이미지를 등록해주세요.");
       return;
     }
 
@@ -41,7 +44,7 @@ const PromotionAddPopup = ({ onClose, onSave }) => {
       // Presigned URL + S3 업로드 + 생성 API 호출
       const result = await uploadPromotionImage(file);
 
-      setMessage('홍보물이 등록되었습니다.');
+      setMessage("홍보물이 등록되었습니다.");
 
       if (onSave) onSave(result.imageUrl);
 
@@ -50,7 +53,7 @@ const PromotionAddPopup = ({ onClose, onSave }) => {
       }, 1000);
     } catch (error) {
       console.error(error);
-      setMessage('등록 실패. 다시 시도해주세요.');
+      setMessage("등록 실패. 다시 시도해주세요.");
     } finally {
       setIsLoading(false);
     }
@@ -84,7 +87,7 @@ const PromotionAddPopup = ({ onClose, onSave }) => {
         {message && (
           <div
             className={`${styles.message} ${
-              message.includes('등록') ? styles.success : styles.error
+              message.includes("등록") ? styles.success : styles.error
             }`}
           >
             {message}
@@ -102,7 +105,7 @@ const PromotionAddPopup = ({ onClose, onSave }) => {
         </div>
 
         <button
-          className={`${styles.saveBtn} ${isLoading ? styles.loading : ''}`}
+          className={`${styles.saveBtn} ${isLoading ? styles.loading : ""}`}
           onClick={handleSave}
           disabled={isLoading}
         >
@@ -125,7 +128,7 @@ const PromotionAddPopup = ({ onClose, onSave }) => {
               등록 중...
             </span>
           ) : (
-            '저장'
+            "저장"
           )}
         </button>
       </div>

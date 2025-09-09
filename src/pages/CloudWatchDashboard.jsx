@@ -1,36 +1,52 @@
-/*
-import React, { useState } from "react";
-import { getCloudWatchMetrics, queryCloudWatchLogs } from "../Api";
+import React, { useState, useEffect } from "react";
+import { getCloudWatchMetrics, getAccessToken } from "../Api"; 
+import {
+  LineChart,
+  Line,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 
 const CloudWatchDashboard = () => {
   const [metrics, setMetrics] = useState(null);
-  const [logs, setLogs] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  // 로그인 여부 확인
+  useEffect(() => {
+    const token = getAccessToken();
+    if (token) {
+      setIsLoggedIn(true);
+    }
+  }, []);
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      // CloudWatch 메트릭 조회 요청 payload
-      const payload = {
+      const metricsPayload = {
         namespace: "AWS/EC2",
         metricName: "CPUUtilization",
-        startTime: new Date(Date.now() - 3600 * 1000).toISOString(),
-        endTime: new Date().toISOString(),
+        dimensions: { InstanceId: "i-090af70deaf158865" },
+        stat: "Average",
         period: 300,
+        startTime: new Date(Date.now() - 2 * 3600 * 1000).toISOString(),
+        endTime: new Date().toISOString(),
       };
 
-      const metricsData = await getCloudWatchMetrics(payload);
-      setMetrics(metricsData);
+      const metricsData = await getCloudWatchMetrics(metricsPayload);
 
-      // CloudWatch 로그 조회 요청 payload
-      const logsData = await queryCloudWatchLogs({
-        logGroupName: "/aws/lambda/my-function",
-        startTime: Date.now() - 3600 * 1000,
-        endTime: Date.now(),
-        queryString: "fields @timestamp, @message | sort @timestamp desc | limit 20",
-      });
-      setLogs(logsData);
+      const chartData = metricsData.timestamps.map((t, i) => ({
+        time: new Date(t).toLocaleTimeString("ko-KR", {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+        value: metricsData.values[i],
+      }));
 
+      setMetrics(chartData);
     } catch (error) {
       console.error("데이터 조회 실패:", error);
     } finally {
@@ -38,131 +54,60 @@ const CloudWatchDashboard = () => {
     }
   };
 
-  return (
-    <div style={{ padding: "20px" }}>
-      <h2>CloudWatch 대시보드</h2>
-      <button onClick={fetchData} disabled={loading}>
-        {loading ? "불러오는 중..." : "데이터 조회"}
-      </button>
-
-      <div style={{ marginTop: "20px" }}>
-        <h3>메트릭</h3>
-        <pre>{metrics ? JSON.stringify(metrics, null, 2) : "데이터 없음"}</pre>
-      </div>
-
-      <div style={{ marginTop: "20px" }}>
-        <h3>로그</h3>
-        <pre>{logs ? JSON.stringify(logs, null, 2) : "데이터 없음"}</pre>
-      </div>
-    </div>
-  );
-};
-
-export default CloudWatchDashboard;
-*/
-
-
-
-
-
-/*
-import React from 'react';
-
-const CloudWatchDashboard = () => {
-  const dashboardUrl = "https://cloudwatch.amazonaws.com/dashboard.html?dashboard=goorm-cloudwatch&context=eyJSIjoidXMtZWFzdC0xIiwiRCI6ImN3LWRiLTAwNDQwNzE1NzcwNCIsIlUiOiJ1cy1lYXN0LTFfTDBWYlBja3VSIiwiQyI6Ijc2Mzl2M21kbTc1OXVuYnNlM3I4bHBtZWJmIiwiSSI6InVzLWVhc3QtMToxNTJjMzNkMS1kZjEzLTQ0ZDctOWIwNS04YjEwZDk3ZjI5NWEiLCJNIjoiUHVibGljIn0=";
-
-  return (
-    <div style={{ padding: '20px', backgroundColor: '#f0f2f5' }}>
-      <h1>AWS CloudWatch 대시보드</h1>
-      
-      <iframe
-        src={dashboardUrl}
-        title="AWS CloudWatch Dashboard"
-        width="100%"
-        height="700px"
-        frameBorder="0"
-        allowFullScreen
-        style={{ border: '1px solid #ddd', borderRadius: '8px' }}
-      ></iframe>
-    </div>
-  );
-};
-
-export default CloudWatchDashboard;
-*/
-
-
-
-
-import React, { useState } from "react";
-import { getCloudWatchMetrics, queryCloudWatchLogs } from "../Api";
-
-const CloudWatchDashboard = () => {
-  const [metrics, setMetrics] = useState(null);
-  const [logs, setLogs] = useState(null);
-  const [loading, setLoading] = useState(false);
-
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      // =========================
-      // CloudWatch 메트릭 조회 payload
-      // =========================
-      const metricsPayload = {
-        namespace: "AWS/EC2",
-        metricName: "CPUUtilization",
-        startTime: new Date(Date.now() - 24 * 3600 * 1000).toISOString(),
-        endTime: new Date().toISOString(),
-        period: 300,
-      };
-
-      console.log("📌 요청 보낼 metrics payload:", metricsPayload);
-
-      const metricsData = await getCloudWatchMetrics(metricsPayload);
-      console.log("📌 수신한 metricsData:", metricsData);
-      setMetrics(metricsData);
-
-      // =========================
-      // CloudWatch 로그 조회 payload
-      // =========================
-      const logPayload = {
-        logGroupNames: ["/aws/ec2/myapp"], 
-        startTime: new Date(Date.now() - 24 * 3600 * 1000).toISOString(),
-        endTime: new Date().toISOString(),
-        queryString: "fields @timestamp, @message | sort @timestamp desc | limit 20",
-      };
-
-      // 타입과 값 확인
-      console.log("startTime 타입:", typeof logPayload.startTime, "값:", logPayload.startTime);
-      console.log("endTime 타입:", typeof logPayload.endTime, "값:", logPayload.endTime);
-      console.log("📌 요청 보낼 logs payload:", logPayload);
-
-      const logsData = await queryCloudWatchLogs(logPayload);
-      console.log("📌 수신한 logsData:", logsData);
-      setLogs(logsData);
-
-    } catch (error) {
-      console.error("❌ 데이터 조회 실패:", error);
-    } finally {
-      setLoading(false);
+  // 로그인 상태일 때만 자동 실행
+  useEffect(() => {
+    if (isLoggedIn) {
+      fetchData();
     }
-  };
+  }, [isLoggedIn]);
 
   return (
-    <div style={{ padding: "20px" }}>
-      <h2>CloudWatch 대시보드</h2>
-      <button onClick={fetchData} disabled={loading}>
-        {loading ? "불러오는 중..." : "데이터 조회"}
-      </button>
+    <div style={{ padding: "20px", backgroundColor: "#f9fafb", borderRadius: "12px" }}>
+      <h2 style={{ fontSize: "24px", fontWeight: "bold", color: "#333" }}>
+        AWS CloudWatch 대시보드
+      </h2>
+      <p style={{ fontSize: "16px", marginBottom: "20px" }}>
+        EC2 인스턴스 CPU Utilization 모니터링
+      </p>
 
-      <div style={{ marginTop: "20px" }}>
-        <h3>메트릭</h3>
-        <pre>{metrics ? JSON.stringify(metrics, null, 2) : "데이터 없음"}</pre>
-      </div>
-
-      <div style={{ marginTop: "20px" }}>
-        <h3>로그</h3>
-        <pre>{logs ? JSON.stringify(logs, null, 2) : "데이터 없음"}</pre>
+      <div
+        style={{
+          marginTop: "20px",
+          height: "400px",
+          backgroundColor: "#fff",
+          border: "1px solid #ddd",
+          borderRadius: "8px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "10px",
+        }}
+      >
+        {!isLoggedIn ? (
+          <p style={{ fontSize: "18px", color: "#999" }}>
+            CPU Utilization 로그인 후 확인할 수 있습니다.
+          </p>
+        ) : loading ? (
+          <p>불러오는 중...</p>
+        ) : metrics ? (
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={metrics}>
+              <CartesianGrid stroke="#eee" />
+              <XAxis dataKey="time" />
+              <YAxis domain={[0, "auto"]} />
+              <Tooltip />
+              <Line
+                type="monotone"
+                dataKey="value"
+                stroke="#4f46e5"
+                strokeWidth={2}
+                dot={false}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        ) : (
+          <p>데이터 없음</p>
+        )}
       </div>
     </div>
   );
