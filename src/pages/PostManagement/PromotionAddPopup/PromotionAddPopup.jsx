@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { IoMdClose } from "react-icons/io";
 import styles from "./PromotionAddPopup.module.css";
-import { uploadPromotionImage } from "../../../Api";
+import { uploadPromotionImage, getAccessToken } from "../../../Api";
 
 const PromotionAddPopup = ({ onClose, onSave }) => {
   const [file, setFile] = useState(null);
@@ -9,19 +9,14 @@ const PromotionAddPopup = ({ onClose, onSave }) => {
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  // 이미지 선택 시 미리보기 설정
+  // 이미지 선택
   const handleImageChange = (e) => {
     const selectedFile = e.target.files[0];
     if (selectedFile) {
-
-      console.log("[handleImageChange] 선택된 파일:", selectedFile);
-      console.log("[handleImageChange] MIME 타입:", selectedFile.type); // ✅ 여기 추가
       setFile(selectedFile);
-
       const reader = new FileReader();
       reader.onloadend = () => setImagePreview(reader.result);
       reader.readAsDataURL(selectedFile);
-
       setMessage("");
     }
   };
@@ -32,7 +27,7 @@ const PromotionAddPopup = ({ onClose, onSave }) => {
     setImagePreview(null);
   };
 
-  // 저장 버튼 클릭 시
+  // 저장
   const handleSave = async () => {
     if (!file) {
       setMessage("이미지를 등록해주세요.");
@@ -41,18 +36,17 @@ const PromotionAddPopup = ({ onClose, onSave }) => {
 
     setIsLoading(true);
     try {
-      // Presigned URL + S3 업로드 + 생성 API 호출
+      const accessToken = getAccessToken();
+      if (!accessToken) throw new Error("로그인이 필요합니다.");
+
       const result = await uploadPromotionImage(file);
 
       setMessage("홍보물이 등록되었습니다.");
-
       if (onSave) onSave(result.imageUrl);
 
-      setTimeout(() => {
-        onClose();
-      }, 1000);
-    } catch (error) {
-      console.error(error);
+      setTimeout(() => onClose(), 1000);
+    } catch (err) {
+      console.error(err);
       setMessage("등록 실패. 다시 시도해주세요.");
     } finally {
       setIsLoading(false);
@@ -109,27 +103,7 @@ const PromotionAddPopup = ({ onClose, onSave }) => {
           onClick={handleSave}
           disabled={isLoading}
         >
-          {isLoading ? (
-            <span className={styles.spinner}>
-              <svg viewBox="0 0 24 24" className={styles.spinnerIcon}>
-                <circle
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                  fill="none"
-                />
-                <path
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                  fill="currentColor"
-                />
-              </svg>
-              등록 중...
-            </span>
-          ) : (
-            "저장"
-          )}
+          {isLoading ? "등록 중..." : "저장"}
         </button>
       </div>
     </>

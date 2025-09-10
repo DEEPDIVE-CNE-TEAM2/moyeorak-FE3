@@ -85,7 +85,7 @@ const CloudWatchDashboard = () => {
       >
         {!isLoggedIn ? (
           <p style={{ fontSize: "18px", color: "#999" }}>
-            CPU Utilization 로그인 후 확인할 수 있습니다.
+            로그인 후 확인하실 수 있습니다.
           </p>
         ) : loading ? (
           <p>불러오는 중...</p>

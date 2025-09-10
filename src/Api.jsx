@@ -310,36 +310,6 @@ export const getPromotionImages = async () => {
 };
 
 // Presigned URL 요청 함수
-/*
-export const getPresignedUrl = async (fileName, file) => {
-  const fileType = file.type; // ✅ MIME 타입 전체 (예: image/jpeg)
-  console.log("[getPresignedUrl] 호출:", fileName, fileType);
-
-  try {
-    const response = await apiClient.get("/api/admin/main-img/presigned-url", {
-      params: {
-        filename: fileName,   // ❌ encodeURIComponent 제거
-        filetype: fileType,   // ❌ encodeURIComponent 제거
-      },
-      paramsSerializer: (params) => {
-        return `filename=${encodeURIComponent(params.filename)}&filetype=${params.filetype}`;
-      },
-
-
-    });
-
-    console.log("[getPresignedUrl] 응답:", response.data);
-
-    const uploadUrl = response.data; // presigned URL
-    const imageUrl = uploadUrl.split("?")[0]; // ✅ 실제 접근 가능한 S3 URL
-    return { uploadUrl, imageUrl };
-  } catch (err) {
-    console.error("[getPresignedUrl] 에러:", err);
-    throw err;
-  }
-};
-*/
-// Presigned URL 요청 함수 (POST + JSON 바디)
 export const getPresignedUrl = async (fileName, file) => {
   const contentType = file.type; // "image/jpeg"
   console.log("[getPresignedUrl] 호출:", fileName, contentType);
@@ -349,19 +319,19 @@ export const getPresignedUrl = async (fileName, file) => {
       "/api/admin/main-img/presigned-url",
       {
         filename: fileName,
-        contentType: contentType, // ✅ 백엔드가 기대하는 키 이름
+        contentType: contentType,
       },
       {
         headers: {
-          "Content-Type": "application/json", // ✅ JSON 전송
+          "Content-Type": "application/json",
         },
       }
     );
 
     console.log("[getPresignedUrl] 응답:", response.data);
 
-    const uploadUrl = response.data; // presigned URL
-    const imageUrl = uploadUrl.split("?")[0]; // ✅ 실제 접근 가능한 S3 URL
+    const uploadUrl = response.data; 
+    const imageUrl = uploadUrl.split("?")[0];
     return { uploadUrl, imageUrl };
   } catch (err) {
     console.error("[getPresignedUrl] 에러:", err.response?.data || err);
@@ -369,10 +339,8 @@ export const getPresignedUrl = async (fileName, file) => {
   }
 };
 
-
-
-
-// 홍보물 생성 (Presigned URL → S3 업로드 → 백엔드 등록)
+// 홍보물 생성
+/*
 export const uploadPromotionImage = async (file) => {
   console.log("[uploadPromotionImage] 파일명:", file.name, "타입:", file.type);
 
@@ -382,14 +350,14 @@ export const uploadPromotionImage = async (file) => {
 
   // 2. S3 업로드
   try {
-    /*
     await axios.put(uploadUrl, file, {
       headers: {
-        "Content-Type": file.type, // ✅ 파일 MIME 타입
+        "Content-Type": file.type, // presigned URL 생성 시 Content-Type과 동일
       },
+      withCredentials: false, // presigned URL은 인증 필요 없음
     });
-    */
-    await axios.put(uploadUrl, file);
+
+
     console.log("[uploadPromotionImage] S3 업로드 성공");
   } catch (err) {
     console.error("[uploadPromotionImage] S3 업로드 실패", err.response?.data || err);
@@ -405,6 +373,26 @@ export const uploadPromotionImage = async (file) => {
     console.error("[uploadPromotionImage] 백엔드 이미지 URL 등록 실패", err.response?.data || err);
     throw err;
   }
+};
+*/
+// 홍보물 업로드
+
+export const uploadPromotionImage = async (file) => {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const accessToken = getAccessToken();
+  if (!accessToken) throw new Error("로그인이 필요합니다.");
+
+  // 프록시 서버 업로드
+  const response = await axios.post("http://localhost:4000/upload", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+      Authorization: accessToken,
+    },
+  });
+
+  return response.data; // { imageUrl, id, ... }
 };
 
 
@@ -456,9 +444,6 @@ export const createFacility = async (facilityData) => {
   const response = await apiClient.post('/api/admin/facility', facilityData);
   return response.data;
 };
-
-
-
 
 // CloudWatch 메트릭 조회
 export const getCloudWatchMetrics = async (payload) => {
