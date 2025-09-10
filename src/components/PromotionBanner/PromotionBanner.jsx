@@ -10,7 +10,7 @@ const regionIdMap = {
   songpa: 3,
 };
 
-const BASE_URL = import.meta.env.VITE_API_URL; // .env에서 API URL 받아오기
+const BASE_URL = import.meta.env.VITE_API_URL; // .env에서 API URL
 
 const PromotionBanner = () => {
   const location = useLocation();
@@ -30,13 +30,20 @@ const PromotionBanner = () => {
 
     fetchRegionMainImages(regionId)
       .then((data) => {
-        const mapped = data.map((item) => ({
-          // imageUrl이 상대경로일 경우 BASE_URL 붙여주기
-          image: item.imageUrl.startsWith("http")
-            ? item.imageUrl
-            : `${BASE_URL}${item.imageUrl}`,
-          text: item.title,
-        }));
+        console.log("API 응답:", data);   // ✅ 여기에서 확인
+
+        if (!Array.isArray(data)) return;
+
+        const mapped = data
+          .filter(item => item.isActive) // 활성화된 배너만
+          .sort((a, b) => a.displayOrder - b.displayOrder) // 노출 순서 정렬
+          .map((item) => ({
+            image: item.imageUrl.startsWith("http")
+              ? item.imageUrl
+              : `${BASE_URL}${item.imageUrl}`,
+            text: item.title,
+          }));
+
         setBanners(mapped);
         setCurrentIndex(0);
       })
@@ -57,15 +64,17 @@ const PromotionBanner = () => {
   return (
     <div className={styles.fullWidthWrapper}>
       <div className={styles.sliderWrapper}>
+        {/* 이전 배너 */}
         <img
           src={banners[prevIndex].image}
           alt="이전 배너"
           className={`${styles.sideImage} ${styles.left}`}
         />
+        {/* 현재 배너 */}
         <div className={styles.banner}>
           <img
             src={banners[currentIndex].image}
-            alt="현재 배너"
+            alt={banners[currentIndex].text || "현재 배너"}
             className={styles.image}
           />
           <div className={currentIndex === 0 ? styles.welcomeText : styles.bannerText}>
@@ -76,6 +85,7 @@ const PromotionBanner = () => {
             <IoIosArrowDroprightCircle className={styles.arrowIcon} onClick={handleNext} />
           </div>
         </div>
+        {/* 다음 배너 */}
         <img
           src={banners[nextIndex].image}
           alt="다음 배너"
