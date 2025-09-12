@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 
 import Navbar from '../../components/Navbar/Navbar';
 import PromotionBanner from '../../components/PromotionBanner/PromotionBanner';
-import RecommendProgramSection from '../../components/RecommendProgramSection/RecommendProgramSection';
 
 const districtToPath = {
   "중구": "jung",
@@ -41,7 +40,8 @@ const Seongdong = () => {
         districtToRentalPath={districtToRentalPath}
       />
       <PromotionBanner />
-      <RecommendProgramSection />
+      <QuickAccessCards />
+      <Footer />
     </div>
   );
 };

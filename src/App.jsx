@@ -24,7 +24,6 @@ import VerifyPhone from "./pages/VerifyPhone";
 import Notice from "./pages/Notice/Notice/Notice";
 import NoticeDetail from "./pages/Notice/NoticeDetail/NoticeDetail";
 
-
 const App = () => {
   return (
     <BrowserRouter>
@@ -52,7 +51,6 @@ const App = () => {
         <Route path="/verify-phone" element={<VerifyPhone />} />
         <Route path="/notice" element={<Notice />} />
         <Route path="/notice/:id" element={<NoticeDetail />} />
-
 
       </Routes>
     </BrowserRouter>

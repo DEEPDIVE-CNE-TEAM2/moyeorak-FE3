@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-
 import Navbar from "../../components/Navbar/Navbar";
 import PromotionBanner from "../../components/PromotionBanner/PromotionBanner";
-import RecommendProgramSection from "../../components/RecommendProgramSection/RecommendProgramSection";
+import QuickAccessCards from "../../components/QuickAccessCards/QuickAccessCards";
+import Footer from "../../components/Footer/Footer";
 
 const districtToPath = {
   "중구": "jung",
@@ -41,7 +41,8 @@ const Jung = () => {
         districtToRentalPath={districtToRentalPath}
       />
       <PromotionBanner />
-      <RecommendProgramSection />
+      <QuickAccessCards />
+      <Footer />
     </div>
   );
 };

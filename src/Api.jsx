@@ -3,29 +3,6 @@ import axios from 'axios';
 const BASE_URL = import.meta.env.VITE_API_URL;
 console.log("PromotionBanner BASE_URL:", BASE_URL);
 
-
-
-/*
-// Access Token 저장 및 가져오기 헬퍼 함수
-export const setAccessToken = (token) => {
-  // token은 '순수 토큰 문자열'만 저장
-  localStorage.setItem("accessToken", token);
-};
-
-export const getAccessToken = () => {
-  const token = localStorage.getItem("accessToken");
-  return token ? `Bearer ${token}` : null;
-};
-
-export const setRefreshToken = (token) => {
-  // token은 '순수 토큰 문자열'만 저장
-  localStorage.setItem("refreshToken", token);
-};
-
-export const getRefreshToken = () => {
-  return localStorage.getItem("refreshToken");
-};
-*/
 // Access Token 저장 및 가져오기 헬퍼 함수
 export const setAccessToken = (token) => {
   sessionStorage.setItem("accessToken", token);
@@ -91,7 +68,29 @@ apiClient.interceptors.response.use(
       !originalRequest._retry &&
       getRefreshToken()
     ) {
+
+    if (
+      error.response?.status === 401 &&
+      !originalRequest._retry &&
+      getRefreshToken()
+    ) {
       originalRequest._retry = true;
+
+      if (isRefreshing) {
+        return new Promise(function (resolve, reject) {
+          failedQueue.push({ resolve, reject });
+        })
+          .then(token => {
+            originalRequest.headers.Authorization = token;
+            return apiClient(originalRequest);
+          })
+          .catch(err => {
+            return Promise.reject(err);
+          });
+      }
+
+      isRefreshing = true;
+
 
       if (isRefreshing) {
         return new Promise(function (resolve, reject) {
@@ -137,14 +136,25 @@ apiClient.interceptors.response.use(
         if (newRefreshToken) {
           setRefreshToken(newRefreshToken.startsWith('Bearer ') ? newRefreshToken.slice(7) : newRefreshToken);
         }
+        if (!newAccessToken) {
+          throw new Error("New access token is missing in refresh response.");
+        }
+
+        setAccessToken(newAccessToken.startsWith('Bearer ') ? newAccessToken.slice(7) : newAccessToken);
+
+        if (newRefreshToken) {
+          setRefreshToken(newRefreshToken.startsWith('Bearer ') ? newRefreshToken.slice(7) : newRefreshToken);
+        }
 
         const bearerNewAccessToken = `Bearer ${newAccessToken.startsWith('Bearer ') ? newAccessToken.slice(7) : newAccessToken}`;
 
         processQueue(null, bearerNewAccessToken);
 
         originalRequest.headers.Authorization = bearerNewAccessToken;
+
         return apiClient(originalRequest);
       } catch (refreshError) {
+        processQueue(refreshError, null);
         processQueue(refreshError, null);
         console.error("Token refresh failed:", refreshError);
 
@@ -159,13 +169,15 @@ apiClient.interceptors.response.use(
       }
     }
 
+
     return Promise.reject(error);
   }
-);
+});
 
 // 로그인
 export const login = async (email, password) => {
   const response = await apiClient.post('/api/users/login', { email, password });
+
 
   if (response.data.accessToken) {
     let token = response.data.accessToken;
@@ -173,16 +185,8 @@ export const login = async (email, password) => {
     setAccessToken(token);
   }
 
-  if (response.data.refreshToken) {
-    let refresh = response.data.refreshToken;
-    if (refresh.startsWith('Bearer ')) refresh = refresh.slice(7);
-    setRefreshToken(refresh);
-  }
-
   return response.data;
 };
-
-export { apiClient };
 
 // 회원가입
 export const signup = async (data) => {
@@ -268,6 +272,7 @@ export const getRentalFacilitiesByRegionId = async (regionId) => {
 export const getMyEnrollments = async () => {
   try {
     const response = await apiClient.get('/api/enrollments/me');
+    return response.data;
     return response.data;
   } catch (error) {
     console.error('내 수강신청 목록 조회 실패:', error);

@@ -24,7 +24,6 @@ const Classes = () => {
           const program = await getProgramDetail(e.programId);
           const userRegionId = JSON.parse(localStorage.getItem('userInfo'))?.regionId;
 
-          // 상태 텍스트 변환 (백엔드 상태 문자열에 맞게 소문자 사용)
           let statusText = '';
           switch (e.status.toLowerCase()) {
             case 'enrolled':
@@ -119,7 +118,7 @@ const Classes = () => {
     try {
       await cancelEnrollment(row.id);
       alert(`${row.title} 수강 신청이 취소되었습니다.`);
-      fetchEnrollments(); // 목록 갱신
+      fetchEnrollments();
     } catch (error) {
       alert('수강신청 취소 중 오류가 발생했습니다.');
       console.error(error);
@@ -127,8 +126,6 @@ const Classes = () => {
   };
 
   const sortedRows = [...enrollments].sort((a, b) => {
-    // 기간이 "YYYY.MM.DD ~ YYYY.MM.DD" 형식일 경우 첫 날짜 기준 정렬
-    // '-' 또는 비정상 문자열 처리
     const parseDate = (str) => {
       if (!str || str === '-') return new Date(0);
       const firstDateStr = str.split('~')[0].trim().replace(/\./g, '-');

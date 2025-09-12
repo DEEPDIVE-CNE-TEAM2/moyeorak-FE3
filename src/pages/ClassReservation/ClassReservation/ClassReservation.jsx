@@ -5,7 +5,6 @@ import SelectPanel from "./SelectPanel/SelectPanel.jsx";
 import Card from "./card/Card.jsx";
 import styles from "./ClassReservation.module.css";
 import { getProgramsByRegion } from "../../../Api";
-import { getFullImageUrl } from "../../../utils/imageUtils";
 
 const ClassReservation = () => {
   const location = useLocation();
@@ -27,13 +26,9 @@ const ClassReservation = () => {
     const fetchPrograms = async () => {
       try {
         const programs = await getProgramsByRegion(regionId);
-
         const today = new Date();
 
         const formattedData = programs.map((program) => {
-          const imageUrlRaw = program.imageUrl || program.image_url || "";
-          const imageUrl = getFullImageUrl(imageUrlRaw);
-
           const inPriceStr =
             program.inPrice != null
               ? program.inPrice.toLocaleString() + "원(관내)"
@@ -68,7 +63,7 @@ const ClassReservation = () => {
 
           return {
             id: program.id,
-            imageUrl,
+            imageUrl: program.imageUrl || program.image_url || "",
             title: program.title,
             details: [
               program.registrationPeriod || "-",

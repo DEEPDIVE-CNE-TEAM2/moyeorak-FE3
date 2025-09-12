@@ -14,7 +14,7 @@ const VerifyPhone = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     alert("인증되었습니다.\n임시 비밀번호가 이메일로 발급되었습니다.");
-    navigate("/login"); // 확인 누르면 로그인 화면으로 이동
+    navigate("/login"); 
   };
 
   return (

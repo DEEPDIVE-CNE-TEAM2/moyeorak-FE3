@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-
 import Navbar from '../../components/Navbar/Navbar';
 import PromotionBanner from '../../components/PromotionBanner/PromotionBanner';
-import RecommendProgramListAfterLogin from '../../components/RecommendProgramListAfterLogin/RecommendProgramListAfterLogin';
 
 const districts = ["중구", "성동구", "송파구"];
 
@@ -60,12 +58,8 @@ const Songpa = () => {
         districtToRentalPath={districtToRentalPath}
       />
       <PromotionBanner />
-      <RecommendProgramListAfterLogin />
-      {!isLoggedIn && (
-        <div style={{ textAlign: "center", marginTop: "50px" }}>
-          <h2>로그아웃 되었습니다. 다시 로그인해 주세요.</h2>
-        </div>
-      )}
+      <QuickAccessCards />
+      <Footer />
     </div>
   );
 };

@@ -10,7 +10,7 @@ const regionIdMap = {
   songpa: 3,
 };
 
-const BASE_URL = import.meta.env.VITE_API_URL; // .env에서 API URL
+const BASE_URL = import.meta.env.VITE_API_URL; 
 
 const PromotionBanner = () => {
   const location = useLocation();
@@ -30,13 +30,12 @@ const PromotionBanner = () => {
 
     fetchRegionMainImages(regionId)
       .then((data) => {
-        console.log("API 응답:", data);   // ✅ 여기에서 확인
 
         if (!Array.isArray(data)) return;
 
         const mapped = data
-          .filter(item => item.isActive) // 활성화된 배너만
-          .sort((a, b) => a.displayOrder - b.displayOrder) // 노출 순서 정렬
+          .filter(item => item.isActive)
+          .sort((a, b) => a.displayOrder - b.displayOrder)
           .map((item) => ({
             image: item.imageUrl.startsWith("http")
               ? item.imageUrl
@@ -64,13 +63,11 @@ const PromotionBanner = () => {
   return (
     <div className={styles.fullWidthWrapper}>
       <div className={styles.sliderWrapper}>
-        {/* 이전 배너 */}
         <img
           src={banners[prevIndex].image}
           alt="이전 배너"
           className={`${styles.sideImage} ${styles.left}`}
         />
-        {/* 현재 배너 */}
         <div className={styles.banner}>
           <img
             src={banners[currentIndex].image}
@@ -85,7 +82,6 @@ const PromotionBanner = () => {
             <IoIosArrowDroprightCircle className={styles.arrowIcon} onClick={handleNext} />
           </div>
         </div>
-        {/* 다음 배너 */}
         <img
           src={banners[nextIndex].image}
           alt="다음 배너"

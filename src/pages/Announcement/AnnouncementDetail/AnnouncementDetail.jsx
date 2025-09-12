@@ -9,7 +9,7 @@ const AnnouncementDetail = () => {
   const navigate = useNavigate();
 
   const [notice, setNotice] = useState(null);
-  const hasFetched = useRef(false); // 중복 방지 플래그
+  const hasFetched = useRef(false);
 
   useEffect(() => {
     if (hasFetched.current) return;
