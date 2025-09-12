@@ -311,7 +311,7 @@ export const getPromotionImages = async () => {
 
 // Presigned URL 요청 함수
 export const getPresignedUrl = async (fileName, file) => {
-  const contentType = file.type; // "image/jpeg"
+  const contentType = file.type;
   console.log("[getPresignedUrl] 호출:", fileName, contentType);
 
   try {
@@ -340,43 +340,6 @@ export const getPresignedUrl = async (fileName, file) => {
 };
 
 // 홍보물 생성
-/*
-export const uploadPromotionImage = async (file) => {
-  console.log("[uploadPromotionImage] 파일명:", file.name, "타입:", file.type);
-
-  // 1. presigned URL 받기
-  const { uploadUrl, imageUrl } = await getPresignedUrl(file.name, file);
-  console.log("[uploadPromotionImage] presigned URL 받음:", uploadUrl);
-
-  // 2. S3 업로드
-  try {
-    await axios.put(uploadUrl, file, {
-      headers: {
-        "Content-Type": file.type, // presigned URL 생성 시 Content-Type과 동일
-      },
-      withCredentials: false, // presigned URL은 인증 필요 없음
-    });
-
-
-    console.log("[uploadPromotionImage] S3 업로드 성공");
-  } catch (err) {
-    console.error("[uploadPromotionImage] S3 업로드 실패", err.response?.data || err);
-    throw err;
-  }
-
-  // 3. 백엔드 DB에 imageUrl 등록
-  try {
-    const response = await apiClient.post("/api/admin/main-img", { imageUrl });
-    console.log("[uploadPromotionImage] 백엔드 이미지 URL 등록 완료", response.data);
-    return response.data; // { id, imageUrl, displayOrder, active }
-  } catch (err) {
-    console.error("[uploadPromotionImage] 백엔드 이미지 URL 등록 실패", err.response?.data || err);
-    throw err;
-  }
-};
-*/
-// 홍보물 업로드
-
 export const uploadPromotionImage = async (file) => {
   const formData = new FormData();
   formData.append("file", file);
@@ -392,11 +355,8 @@ export const uploadPromotionImage = async (file) => {
     },
   });
 
-  return response.data; // { imageUrl, id, ... }
+  return response.data;
 };
-
-
-
 
 // 홍보물 수정
 export const patchMainImage = async (payload) => {
